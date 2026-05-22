@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Admin Panel · Contact Gain Nija</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --green-deep: #0d2b1a;
+    --green-mid: #1a6b3c;
+    --green-accent: #2d9e5f;
+    --green-light: #4dc98a;
+    --yellow: #f5c842;
+    --yellow-glow: rgba(245,200,66,0.15);
+    --white: #ffffff;
+    --surface: #0f1f15;
+    --surface-2: #162a1e;
+    --surface-3: #1e3829;
+    --border: rgba(77,201,138,0.15);
+    --text: #e8f5ee;
+    --text-muted: #7aab8e;
+    --red: #ef4444;
+    --shadow: 0 8px 40px rgba(0,0,0,0.4);
+    --radius: 16px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--green-deep);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  .bg-grid {
+    position: fixed; inset: 0; z-index: 0; pointer-events: none;
+    background-image:
+      linear-gradient(rgba(77,201,138,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(77,201,138,0.04) 1px, transparent 1px);
+    background-size: 40px 40px;
+  }
+  .bg-glow {
+    position: fixed; inset: 0; z-index: 0; pointer-events: none;
+    background:
+      radial-gradient(ellipse 60% 50% at 80% 10%, rgba(77,201,138,0.1) 0%, transparent 60%),
+      radial-gradient(ellipse 50% 40% at 20% 80%, rgba(245,200,66,0.07) 0%, transparent 60%);
+  }
+
+  #login-screen {
+    position: relative; z-index: 10;
+    display: flex; align-items: center; justify-content: center;
+    min-height: 100vh; padding: 20px;
+  }
+  .login-card {
+    width: 100%; max-width: 420px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 24px;
+    padding: 48px 40px;
+    box-shadow: var(--shadow), 0 0 80px rgba(77,201,138,0.06);
+    animation: fadeIn 0.6s ease both;
+  }
+  @keyframes fadeIn { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+
+  .login-badge {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: var(--yellow-glow);
+    border: 1px solid rgba(245,200,66,0.3);
+    color: var(--yellow); font-size: 0.72rem; font-weight: 600;
+    letter-spacing: 0.15em; text-transform: uppercase;
+    padding: 6px 16px; border-radius: 99px;
+    margin-bottom: 20px;
+  }
+  .login-card h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.9rem; font-weight: 900;
+    color: var(--white); margin-bottom: 6px;
+    line-height: 1.2;
+  }
+  .login-card h1 span { color: var(--green-light); }
+  .login-subtitle { color: var(--text-muted); font-size: 0.88rem; margin-bottom: 36px; }
+
+  .field { margin-bottom: 20px; }
+  .field label {
+    display: block; font-size: 0.78rem; font-weight: 600;
+    color: var(--text-muted); letter-spacing: 0.1em;
+    text-transform: uppercase; margin-bottom: 8px;
+  }
+  .field input {
+    width: 100%; padding: 13px 16px;
+    font-family: 'DM Sans', sans-serif; font-size: 0.95rem;
+    color: var(--white);
+    background: var(--surface-3);
+    border: 1px solid var(--border);
+    border-radius: 10px; outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .field input:focus {
+    border-color: var(--green-accent);
+    box-shadow: 0 0 0 3px rgba(45,158,95,0.2);
+  }
+
+  .btn-login {
+    width: 100%; padding: 14px;
+    background: linear-gradient(135deg, var(--green-mid), var(--green-accent));
+    color: white; font-family: 'DM Sans', sans-serif;
+    font-size: 1rem; font-weight: 600;
+    border: none; border-radius: 10px; cursor: pointer;
+    transition: filter 0.2s, transform 0.15s, box-shadow 0.2s;
+    box-shadow: 0 6px 24px rgba(26,107,60,0.4);
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+  }
+  .btn-login:hover { filter: brightness(1.1); transform: translateY(-1px); }
+  .login-err { color: #f87171; font-size: 0.83rem; margin-top: 12px; text-align: center; display: none; }
+  .login-err.show { display: block; }
+
+  #admin-screen { display: none; position: relative; z-index: 10; min-height: 100vh; }
+
+  .topbar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 18px 32px;
+    background: var(--surface-2);
+    border-bottom: 1px solid var(--border);
+    position: sticky; top: 0; z-index: 100;
+    backdrop-filter: blur(10px);
+  }
+  .topbar-left { display: flex; align-items: center; gap: 14px; }
+  .topbar-logo {
+    width: 40px; height: 40px;
+    background: linear-gradient(135deg, var(--yellow), var(--green-light));
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Playfair Display', serif; font-weight: 900;
+    font-size: 1rem; color: var(--green-deep);
+  }
+  .topbar-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.1rem; font-weight: 700; color: var(--white);
+  }
+  .topbar-sub { font-size: 0.75rem; color: var(--text-muted); }
+  .topbar-right { display: flex; align-items: center; gap: 12px; }
+  .admin-badge {
+    background: var(--yellow-glow); border: 1px solid rgba(245,200,66,0.3);
+    color: var(--yellow); font-size: 0.72rem; font-weight: 600;
+    padding: 5px 12px; border-radius: 99px; letter-spacing: 0.1em;
+  }
+  .btn-logout {
+    padding: 8px 16px;
+    background: rgba(239,68,68,0.12); border: 1px solid rgba(239,68,68,0.3);
+    color: #f87171; border-radius: 8px; cursor: pointer;
+    font-family: 'DM Sans', sans-serif; font-size: 0.83rem; font-weight: 600;
+    transition: background 0.2s;
+  }
+  .btn-logout:hover { background: rgba(239,68,68,0.2); }
+
+  .dashboard { padding: 32px; max-width: 1100px; margin: 0 auto; }
+
+  .stats-row { display: flex; gap: 16px; margin-bottom: 28px; flex-wrap: wrap; }
+  .stat-card {
+    flex: 1; min-width: 160px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 20px 22px;
+    position: relative; overflow: hidden;
+  }
+  .stat-card::before {
+    content: ''; position: absolute; inset: 0;
+    background: linear-gradient(135deg, rgba(77,201,138,0.05), transparent);
+  }
+  .stat-val {
+    font-family: 'Playfair Display', serif;
+    font-size: 2.2rem; font-weight: 900; color: var(--green-light);
+    line-height: 1;
+  }
+  .stat-label { font-size: 0.78rem; color: var(--text-muted); margin-top: 6px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.08em; }
+
+  .toolbar {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 14px; margin-bottom: 20px; flex-wrap: wrap;
+  }
+  .toolbar h2 {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.3rem; font-weight: 700; color: var(--white);
+  }
+  .toolbar-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+
+  .btn-action {
+    display: flex; align-items: center; gap: 8px;
+    padding: 10px 20px;
+    font-family: 'DM Sans', sans-serif; font-size: 0.88rem; font-weight: 600;
+    border: none; border-radius: 10px; cursor: pointer;
+    transition: transform 0.15s, filter 0.2s;
+  }
+  .btn-action:hover { transform: translateY(-1px); filter: brightness(1.1); }
+  .btn-vcf {
+    background: linear-gradient(135deg, var(--green-mid), var(--green-accent));
+    color: white; box-shadow: 0 4px 16px rgba(26,107,60,0.4);
+  }
+  .btn-csv {
+    background: linear-gradient(135deg, #1e3a5f, #2563eb);
+    color: white; box-shadow: 0 4px 16px rgba(37,99,235,0.3);
+  }
+  .btn-refresh {
+    background: var(--surface-3);
+    border: 1px solid var(--border); color: var(--text-muted);
+  }
+
+  .search-wrap { margin-bottom: 20px; position: relative; }
+  .search-wrap input {
+    width: 100%; padding: 12px 16px 12px 42px;
+    background: var(--surface-2); border: 1px solid var(--border);
+    color: var(--white); border-radius: 10px;
+    font-family: 'DM Sans', sans-serif; font-size: 0.93rem; outline: none;
+    transition: border-color 0.2s;
+  }
+  .search-wrap input:focus { border-color: var(--green-accent); }
+  .search-icon {
+    position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
+    color: var(--text-muted); font-size: 1rem; pointer-events: none;
+  }
+
+  .table-wrap {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    box-shadow: var(--shadow);
+  }
+  table { width: 100%; border-collapse: collapse; }
+  thead tr {
+    background: var(--surface-3);
+    border-bottom: 1px solid var(--border);
+  }
+  th {
+    padding: 14px 18px; text-align: left;
+    font-size: 0.75rem; font-weight: 700;
+    color: var(--text-muted); letter-spacing: 0.12em; text-transform: uppercase;
+  }
+  td {
+    padding: 14px 18px; font-size: 0.9rem;
+    border-bottom: 1px solid rgba(77,201,138,0.07);
+    color: var(--text);
+  }
+  tbody tr { transition: background 0.15s; }
+  tbody tr:hover { background: rgba(77,201,138,0.05); }
+  tbody tr:last-child td { border-bottom: none; }
+
+  .badge-phone {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: rgba(45,158,95,0.15); border: 1px solid rgba(45,158,95,0.25);
+    color: var(--green-light); padding: 4px 10px; border-radius: 6px;
+    font-size: 0.85rem; font-family: monospace; font-weight: 600;
+  }
+
+  .row-num { color: var(--text-muted); font-size: 0.8rem; font-weight: 600; }
+
+  .empty-state {
+    text-align: center; padding: 60px 20px; color: var(--text-muted);
+  }
+  .empty-state div { font-size: 2.5rem; margin-bottom: 12px; }
+  .empty-state p { font-size: 0.9rem; }
+
+  .pagination {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 18px; border-top: 1px solid var(--border);
+    font-size: 0.83rem; color: var(--text-muted); flex-wrap: wrap; gap: 10px;
+  }
+  .page-btns { display: flex; gap: 6px; }
+  .page-btn {
+    padding: 6px 12px; border-radius: 6px; cursor: pointer;
+    background: var(--surface-3); border: 1px solid var(--border);
+    color: var(--text-muted); font-size: 0.8rem;
+    transition: background 0.15s;
+  }
+  .page-btn:hover, .page-btn.active {
+    background: var(--green-mid); color: white; border-color: var(--green-mid);
+  }
+
+  .toast {
+    position: fixed; bottom: 24px; right: 24px; z-index: 9999;
+    padding: 14px 20px; border-radius: 12px;
+    font-size: 0.9rem; font-weight: 500;
+    display: flex; align-items: center; gap: 10px;
+    transform: translateY(80px); opacity: 0;
+    transition: transform 0.35s cubic-bezier(0.16,1,0.3,1), opacity 0.35s;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  }
+  .toast.show { transform: translateY(0); opacity: 1; }
+  .toast.success { background: linear-gradient(135deg, #166534, #16a34a); color: white; }
+  .toast.error { background: linear-gradient(135deg, #7f1d1d, #dc2626); color: white; }
+  .toast.info { background: linear-gradient(135deg, #1e3a5f, #2563eb); color: white; }
+
+  .spinner {
+    width: 16px; height: 16px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-top-color: white; border-radius: 50%;
+    animation: spin 0.7s linear infinite; display: none;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  @media (max-width: 600px) {
+    .topbar { padding: 14px 18px; }
+    .dashboard { padding: 18px; }
+    .admin-badge { display: none; }
+    th:nth-child(4), td:nth-child(4) { display: none; }
+  }
+</style>
+</head>
+<body>
+<div class="bg-grid"></div>
+<div class="bg-glow"></div>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-badge">🔒 Secure Admin Access</div>
+    <h1>Admin <span>Panel</span></h1>
+    <p class="login-subtitle">Sign in with your admin credentials to manage contacts.</p>
+
+    <div class="field">
+      <label>Email Address</label>
+      <input type="email" id="admin-email" placeholder="email" autocomplete="email"/>
+    </div>
+    <div class="field">
+      <label>Password</label>
+      <input type="password" id="admin-pass" placeholder="••••••••" autocomplete="current-password"
+             onkeydown="if(event.key==='Enter') doLogin()"/>
+    </div>
+
+    <button class="btn-login" onclick="doLogin()">
+      <span id="login-btn-text">Sign In to Admin</span>
+      <div class="spinner" id="login-spinner"></div>
+    </button>
+    <div class="login-err" id="login-err"></div>
+  </div>
+</div>
+
+<!-- ADMIN DASHBOARD -->
+<div id="admin-screen">
+  <div class="topbar">
+    <div class="topbar-left">
+      <img src="logo.png" alt="Logo" style="
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  object-fit: cover;
+  border: 2px solid rgba(245,200,66,0.4);
+"/>
+      <div>
+        <div class="topbar-title">Contact Gain Nija</div>
+        <div class="topbar-sub">Admin Dashboard</div>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <div class="admin-badge">⚡ Admin</div>
+      <button class="btn-logout" onclick="doLogout()">Sign Out</button>
+    </div>
+  </div>
+
+  <div class="dashboard">
+
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="stat-val" id="stat-total">—</div>
+        <div class="stat-label">Total Contacts</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-val" id="stat-today">—</div>
+        <div class="stat-label">Today</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-val" id="stat-week">—</div>
+        <div class="stat-label">This Week</div>
+      </div>
+    </div>
+
+    <div class="toolbar">
+      <h2>📋 Contact Uploads</h2>
+      <div class="toolbar-actions">
+        <button class="btn-action btn-refresh" onclick="loadContacts()">🔄 Refresh</button>
+        <button class="btn-action btn-csv" onclick="downloadCSV()">⬇ Export CSV</button>
+        <button class="btn-action btn-vcf" onclick="downloadVCF()">📇 Download VCF</button>
+      </div>
+    </div>
+
+    <div class="search-wrap">
+      <span class="search-icon">🔍</span>
+      <input type="text" id="search-input" placeholder="Search by name or phone…" oninput="renderTable()"/>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Name</th>
+            <th>Phone</th>
+            <th>Country Code</th>
+            <th>Submitted</th>
+          </tr>
+        </thead>
+        <tbody id="contacts-tbody">
+          <tr><td colspan="5"><div class="empty-state"><div>⏳</div><p>Loading contacts...</p></div></td></tr>
+        </tbody>
+      </table>
+      <div class="pagination">
+        <span id="page-info">Showing 0 contacts</span>
+        <div class="page-btns" id="page-btns"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast">
+  <span id="toast-icon"></span>
+  <span id="toast-msg"></span>
+</div>
+
+<!-- FIREBASE -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import {
+    getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged
+  } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+  import {
+    getFirestore, collection, getDocs, query, orderBy
+  } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+ const firebaseConfig = {
+    apiKey: "AIzaSyDtj8CthY1OhMAMAUPOq1Zkj30soK5CLr0",
+    authDomain: "ludek-marketplace-3bcde.firebaseapp.com",
+    projectId: "ludek-marketplace-3bcde",
+    storageBucket: "ludek-marketplace-3bcde.firebasestorage.app",
+    messagingSenderId: "61300786658",
+    appId: "1:61300786658:web:24bb41f2c65facfa5ba5bb"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+
+  window._auth = auth;
+  window._db = db;
+  window._signIn = signInWithEmailAndPassword;
+  window._signOut = signOut;
+  window._onAuth = onAuthStateChanged;
+  window._collection = collection;
+  window._getDocs = getDocs;
+  window._query = query;
+  window._orderBy = orderBy;
+  window._firebaseReady = true;
+
+  onAuthStateChanged(auth, user => {
+    if (user) {
+      document.getElementById('login-screen').style.display = 'none';
+      document.getElementById('admin-screen').style.display = 'block';
+      loadContacts();
+    } else {
+      document.getElementById('login-screen').style.display = 'flex';
+      document.getElementById('admin-screen').style.display = 'none';
+    }
+  });
+</script>
+
+<script>
+  let allContacts = [];
+  const PER_PAGE = 20;
+  let currentPage = 1;
+
+  function showToast(msg, type = 'success') {
+    const icons = { success: '✅', error: '❌', info: 'ℹ️' };
+    const t = document.getElementById('toast');
+    document.getElementById('toast-msg').textContent = msg;
+    document.getElementById('toast-icon').textContent = icons[type] || '';
+    t.className = 'toast ' + type;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 4000);
+  }
+
+  async function waitFirebase() {
+    let i = 0;
+    while (!window._firebaseReady && i < 40) { await new Promise(r => setTimeout(r, 150)); i++; }
+    if (!window._firebaseReady) throw new Error('Firebase not initialised. Check your config.');
+  }
+
+  async function doLogin() {
+    const email = document.getElementById('admin-email').value.trim();
+    const pass = document.getElementById('admin-pass').value;
+    const err = document.getElementById('login-err');
+    err.classList.remove('show');
+
+    if (!email || !pass) { err.textContent = 'Please enter email and password.'; err.classList.add('show'); return; }
+
+    document.getElementById('login-btn-text').textContent = 'Signing in…';
+    document.getElementById('login-spinner').style.display = 'block';
+
+    try {
+      await waitFirebase();
+      await window._signIn(window._auth, email, pass);
+    } catch (e) {
+      const map = {
+        'auth/wrong-password': 'Incorrect password.',
+        'auth/user-not-found': 'No admin account found.',
+        'auth/invalid-email': 'Invalid email address.',
+        'auth/too-many-requests': 'Too many attempts. Try again later.',
+        'auth/invalid-credential': 'Invalid credentials. Check email & password.'
+      };
+      err.textContent = map[e.code] || e.message;
+      err.classList.add('show');
+    } finally {
+      document.getElementById('login-btn-text').textContent = 'Sign In to Admin';
+      document.getElementById('login-spinner').style.display = 'none';
+    }
+  }
+
+  function doLogout() {
+    window._signOut(window._auth);
+    allContacts = [];
+  }
+
+  async function loadContacts() {
+    try {
+      await waitFirebase();
+      const q = window._query(window._collection(window._db, 'contacts'), window._orderBy('submittedAt', 'desc'));
+      const snap = await window._getDocs(q);
+      allContacts = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+      updateStats();
+      currentPage = 1;
+      renderTable();
+      showToast(`Loaded ${allContacts.length} contacts.`, 'info');
+    } catch (e) {
+      showToast('Failed to load: ' + e.message, 'error');
+    }
+  }
+
+  function updateStats() {
+    document.getElementById('stat-total').textContent = allContacts.length;
+    const now = new Date();
+    const today = allContacts.filter(c => {
+      if (!c.submittedAt) return false;
+      const d = c.submittedAt.toDate ? c.submittedAt.toDate() : new Date(c.submittedAt);
+      return d.toDateString() === now.toDateString();
+    }).length;
+    const weekAgo = new Date(now - 7*24*60*60*1000);
+    const week = allContacts.filter(c => {
+      if (!c.submittedAt) return false;
+      const d = c.submittedAt.toDate ? c.submittedAt.toDate() : new Date(c.submittedAt);
+      return d >= weekAgo;
+    }).length;
+    document.getElementById('stat-today').textContent = today;
+    document.getElementById('stat-week').textContent = week;
+  }
+
+  function getFiltered() {
+    const q = (document.getElementById('search-input').value || '').toLowerCase();
+    if (!q) return allContacts;
+    return allContacts.filter(c =>
+      (c.name || '').toLowerCase().includes(q) ||
+      (c.phone || '').toLowerCase().includes(q)
+    );
+  }
+
+  function renderTable() {
+    const filtered = getFiltered();
+    const total = filtered.length;
+    const pages = Math.max(1, Math.ceil(total / PER_PAGE));
+    if (currentPage > pages) currentPage = 1;
+
+    const slice = filtered.slice((currentPage-1)*PER_PAGE, currentPage*PER_PAGE);
+    const tbody = document.getElementById('contacts-tbody');
+
+    if (slice.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="5"><div class="empty-state"><div>📭</div><p>No contacts found.</p></div></td></tr>`;
+    } else {
+      tbody.innerHTML = slice.map((c, i) => {
+        const dt = c.submittedAt?.toDate ? c.submittedAt.toDate().toLocaleString() : '—';
+        const n = (currentPage-1)*PER_PAGE + i + 1;
+        return `<tr>
+          <td class="row-num">${n}</td>
+          <td><strong>${esc(c.name || '—')}</strong></td>
+          <td><span class="badge-phone">📞 ${esc(c.phone || '—')}</span></td>
+          <td>${esc(c.countryCode || '—')}</td>
+          <td style="color:var(--text-muted);font-size:0.82rem">${dt}</td>
+        </tr>`;
+      }).join('');
+    }
+
+    document.getElementById('page-info').textContent = `Showing ${slice.length} of ${total} contacts`;
+
+    const pb = document.getElementById('page-btns');
+    pb.innerHTML = '';
+    for (let p = 1; p <= pages; p++) {
+      const b = document.createElement('button');
+      b.className = 'page-btn' + (p === currentPage ? ' active' : '');
+      b.textContent = p;
+      b.onclick = () => { currentPage = p; renderTable(); };
+      pb.appendChild(b);
+    }
+  }
+
+  function esc(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  function downloadVCF() {
+    if (allContacts.length === 0) { showToast('No contacts to export.', 'error'); return; }
+    let vcf = '';
+    allContacts.forEach(c => {
+      const name = (c.name || 'Unknown').trim();
+      const phone = (c.phone || '').trim();
+      vcf += `BEGIN:VCARD\r\nVERSION:3.0\r\nFN:${name}\r\nN:${name.split(' ').reverse().join(';')};;;\r\n`;
+      if (phone) vcf += `TEL;TYPE=CELL:${phone}\r\n`;
+      vcf += `END:VCARD\r\n\r\n`;
+    });
+    downloadFile(vcf, 'contacts_gain_nija.vcf', 'text/vcard');
+    showToast(`VCF downloaded — ${allContacts.length} contacts.`, 'success');
+  }
+
+  function downloadCSV() {
+    if (allContacts.length === 0) { showToast('No contacts to export.', 'error'); return; }
+    const rows = [['Name','Phone','Country Code','Submitted']];
+    allContacts.forEach(c => {
+      const dt = c.submittedAt?.toDate ? c.submittedAt.toDate().toISOString() : '';
+      rows.push([c.name||'', c.phone||'', c.countryCode||'', dt]);
+    });
+    const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')).join('\r\n');
+    downloadFile(csv, 'contacts_gain_nija.csv', 'text/csv');
+    showToast(`CSV downloaded — ${allContacts.length} contacts.`, 'success');
+  }
+
+  function downloadFile(content, filename, mime) {
+    const blob = new Blob([content], { type: mime });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  }
+
+  window.doLogin = doLogin;
+  window.doLogout = doLogout;
+  window.loadContacts = loadContacts;
+  window.downloadVCF = downloadVCF;
+  window.downloadCSV = downloadCSV;
+  window.renderTable = renderTable;
+</script>
+</body>
+</html>
