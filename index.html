@@ -709,7 +709,7 @@
   window._getDocs = getDocs;
   window._addDoc = addDoc;
   window._deleteDoc = deleteDoc;
-  window._doc = doc;
+  window._firestoreDoc = doc;
   window._query = query;
   window._orderBy = orderBy;
   window._serverTimestamp = serverTimestamp;
@@ -871,7 +871,7 @@
           <td><span class="badge-phone">📞 ${esc(c.phone || '—')}</span></td>
           <td style="color:var(--text-muted)">${esc(c.countryCode || '—')}</td>
           <td style="color:var(--text-muted);font-size:0.8rem">${dt}</td>
-          <td><button class="btn-delete" onclick="confirmDelete('${c.id}')">🗑 Delete</button></td>
+       <td><button class="btn-delete" onclick="confirmDelete(this.dataset.id)" data-id="${c.id}">🗑 Delete</button></td>
         </tr>`;
       }).join('');
     }
@@ -955,30 +955,36 @@
 
   // ── DELETE CONTACT ──
   function confirmDelete(id) {
-    pendingDeleteId = id;
-    const modal = document.getElementById('confirm-modal');
-    modal.classList.add('open');
-    document.getElementById('confirm-del-btn').onclick = async () => {
-      closeConfirm();
-      await executeDelete(pendingDeleteId);
-    };
+  if (!id) { showToast('Invalid contact ID.', 'error'); return; }
+  pendingDeleteId = String(id);
+  document.getElementById('confirm-modal').classList.add('open');
+  document.getElementById('confirm-del-btn').onclick = function() {
+    const idToDelete = pendingDeleteId;
+    closeConfirm();
+    executeDelete(idToDelete);
+  };
+}
+
+async function executeDelete(id) {
+  if (!id) { showToast('Invalid contact ID.', 'error'); return; }
+  try {
+    await waitFirebase();
+    const firestoreModule = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");
+    const docRef = firestoreModule.doc(window._db, 'contacts', id);
+    await firestoreModule.deleteDoc(docRef);
+    allContacts = allContacts.filter(c => c.id !== id);
+    updateStats();
+    renderTable();
+    showToast('Contact deleted successfully.', 'success');
+  } catch (e) {
+    showToast('Delete failed: ' + e.message, 'error');
   }
+}
+
+// ── CLOSE CONFIRM ──
   function closeConfirm() {
     document.getElementById('confirm-modal').classList.remove('open');
     pendingDeleteId = null;
-  }
-
-  async function executeDelete(id) {
-    try {
-      await waitFirebase();
-      await window._deleteDoc(window._doc(window._db, 'contacts', id));
-      allContacts = allContacts.filter(c => c.id !== id);
-      updateStats();
-      renderTable();
-      showToast('Contact deleted successfully.', 'success');
-    } catch (e) {
-      showToast('Delete failed: ' + e.message, 'error');
-    }
   }
 
   // ── DOWNLOAD VCF ──
